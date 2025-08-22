@@ -5,6 +5,16 @@ Description: >
 
   Sample SAM Template for ever-smile-ai
 
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    Description: Stage name for the deployment (dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -31,11 +41,11 @@ Outputs:
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   EverSmileAPI:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ever-smile-api/"
+    Description: "API Gateway endpoint URL for ${Stage} stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/ever-smile-api/"
   EverSmileAPIArn:
     Description: "EverSmile Lambda Function ARN"
     Value: !GetAtt EverSmileAPI.Arn
   EverSmileAPIUrl:
     Description: "EverSmile API Gateway endpoint URL"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ever-smile-api/"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/ever-smile-api/"
