@@ -68,7 +68,8 @@ jobs:
             --stack-name ${{ env.STACK_NAME }} \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }} \
-            --parameter-overrides Stage=${{ env.ENVIRONMENT }}
+            --parameter-overrides Stage=${{ env.ENVIRONMENT }} \
+            --stage ${{ env.ENVIRONMENT }}
 
       - name: Get deployment status
         run: |

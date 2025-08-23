@@ -12,6 +12,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        // Get environment variables
+        const stage = process.env.STAGE || 'dev';
+        const logLevel = process.env.LOG_LEVEL || 'INFO';
+
         // Handle OPTIONS request for CORS preflight
         if (event.httpMethod === 'OPTIONS') {
             return {
@@ -50,7 +54,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
             }
 
             // Process the POST request
-            console.log('Received POST request with body:', requestBody);
+            console.log(`[${stage}] Received POST request with body:`, requestBody);
+            console.log(`[${stage}] Log level: ${logLevel}`);
 
             return {
                 statusCode: 200,
@@ -61,6 +66,10 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
                 body: JSON.stringify({
                     message: 'POST request received successfully',
                     receivedData: requestBody,
+                    environment: {
+                        stage: stage,
+                        logLevel: logLevel,
+                    },
                     timestamp: new Date().toISOString(),
                 }),
             };
