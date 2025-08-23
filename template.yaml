@@ -24,7 +24,7 @@ Resources:
   EverSmileAPI:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/api
+      CodeUri: src/app.mjs
       Handler: app.lambdaHandler
       Runtime: nodejs20.x
       Architectures:
