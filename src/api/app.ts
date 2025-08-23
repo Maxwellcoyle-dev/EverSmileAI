@@ -1,4 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import priorityAgent from '../functions/priorityAgent';
 
 /**
  *
@@ -38,6 +39,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
             if (event.body) {
                 try {
                     requestBody = JSON.parse(event.body);
+                    const priorityAgentResponse = await priorityAgent(requestBody);
+                    return priorityAgentResponse;
                 } catch (parseError) {
                     return {
                         statusCode: 400,
