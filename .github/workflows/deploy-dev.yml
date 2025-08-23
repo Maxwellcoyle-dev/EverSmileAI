@@ -35,6 +35,11 @@ jobs:
           cd src/api
           npm ci
 
+      - name: Build TypeScript
+        run: |
+          cd src/api
+          npm run build
+
       - name: Install AWS SAM CLI
         uses: aws-actions/setup-sam@v2
 
