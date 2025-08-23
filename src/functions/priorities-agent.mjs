@@ -1,9 +1,9 @@
-const priorityAgent = async (event: any) => {
+const priorityAgent = async (event) => {
   console.log(event);
   return {
     statusCode: 200,
     body: JSON.stringify({
-      message: "Hello, World - from the priorityAgent function!",
+      message: "Hello, World! - from the priorityAgent function",
     }),
   };
 };
