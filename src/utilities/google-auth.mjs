@@ -1,39 +1,61 @@
 import { google } from "googleapis";
 import { GoogleAuth } from "google-auth-library";
+import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 
 const googleAuth = async () => {
-  const externalAccountConfig = JSON.parse(process.env.GCP_WIF_CONFIG);
+  try {
+    // Validate AWS identity first
+    const stsClient = new STSClient({});
+    const id = await stsClient.send(new GetCallerIdentityCommand({}));
+    console.log("AWS Caller Identity ARN:", id.Arn);
+    console.log("AWS Account ID:", id.Account);
+    console.log("AWS User ID:", id.UserId);
 
-  const auth = new GoogleAuth({
-    credentials: externalAccountConfig,
-    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
-  });
-  const client = await auth.getClient();
-  const drive = google.drive({ version: "v3", auth: client });
+    // Continue with Google Auth if AWS validation passes
+    const externalAccountConfig = JSON.parse(process.env.GCP_WIF_CONFIG);
 
-  // 1) Prove WIF works: list Shared Drives visible to the SA
-  const drives = await drive.drives.list({ pageSize: 10 });
-  const summary = (drives.data.drives || []).map((d) => ({
-    name: d.name,
-    id: d.id,
-  }));
-
-  // Optionally: use a specific Shared Drive ID (paste to env once you know it)
-  let files = [];
-  const driveId = process.env.SHARED_DRIVE_ID;
-  if (driveId) {
-    const res = await drive.files.list({
-      corpora: "drive",
-      driveId,
-      includeItemsFromAllDrives: true,
-      supportsAllDrives: true,
-      pageSize: 10,
-      fields: "files(id,name,mimeType)",
+    const auth = new GoogleAuth({
+      credentials: externalAccountConfig,
+      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
     });
-    files = res.data.files || [];
-  }
+    const client = await auth.getClient();
+    const drive = google.drive({ version: "v3", auth: client });
 
-  return { drives: summary, sampleFiles: files };
+    // 1) Prove WIF works: list Shared Drives visible to the SA
+    const drives = await drive.drives.list({ pageSize: 10 });
+    const summary = (drives.data.drives || []).map((d) => ({
+      name: d.name,
+      id: d.id,
+    }));
+
+    // Optionally: use a specific Shared Drive ID (paste to env once you know it)
+    let files = [];
+    const driveId = process.env.SHARED_DRIVE_ID;
+    if (driveId) {
+      const res = await drive.files.list({
+        corpora: "drive",
+        driveId,
+        includeItemsFromAllDrives: true,
+        supportsAllDrives: true,
+        pageSize: 10,
+        fields: "files(id,name,mimeType)",
+      });
+      files = res.data.files || [];
+    }
+
+    return {
+      awsIdentity: {
+        arn: id.Arn,
+        accountId: id.Account,
+        userId: id.UserId,
+      },
+      drives: summary,
+      sampleFiles: files,
+    };
+  } catch (error) {
+    console.error("Error in googleAuth:", error);
+    throw error;
+  }
 };
 
 export default googleAuth;

@@ -8,6 +8,7 @@
   "author": "SAM CLI",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-sts": "^3.873.0",
     "axios": ">=1.6.0",
     "google-auth-library": "^10.2.1",
     "googleapis": "^157.0.0"
