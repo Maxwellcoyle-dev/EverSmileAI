@@ -48,3 +48,5 @@ export const handler = async () => {
 
   return { files: files.data.files };
 };
+
+export default googleAuth;
