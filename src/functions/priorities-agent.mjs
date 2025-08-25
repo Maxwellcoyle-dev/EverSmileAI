@@ -10,8 +10,9 @@ const priorityAgent = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify({
-        message: "Success! AWS STS validation completed",
+        message: "Success! AWS STS validation and Google Auth completed",
         awsIdentity: googleAuthResponse.awsIdentity,
+        googleServiceAccount: googleAuthResponse.googleServiceAccount,
         drives: googleAuthResponse.drives,
         sampleFiles: googleAuthResponse.sampleFiles,
         event: event,
