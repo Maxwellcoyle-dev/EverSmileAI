@@ -17,7 +17,20 @@ const googleAuth = async ({
       new GetSecretValueCommand({ SecretId: secretId })
     );
     if (!SecretString) throw new Error("Secret has no SecretString");
-    const key = JSON.parse(SecretString);
+
+    // Parse the secret string - it might be nested under a key name
+    let key;
+    try {
+      const parsed = JSON.parse(SecretString);
+      // If the secret is nested under a key name, extract the actual value
+      if (parsed[secretId]) {
+        key = JSON.parse(parsed[secretId]);
+      } else {
+        key = parsed;
+      }
+    } catch (parseError) {
+      throw new Error(`Failed to parse secret: ${parseError.message}`);
+    }
 
     console.log("key", key);
     console.log("secretId", secretId);
