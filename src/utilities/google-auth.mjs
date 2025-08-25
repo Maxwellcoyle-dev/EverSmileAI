@@ -19,6 +19,10 @@ const googleAuth = async ({
     if (!SecretString) throw new Error("Secret has no SecretString");
     const key = JSON.parse(SecretString);
 
+    console.log("key", key);
+    console.log("secretId", secretId);
+    console.log("sharedDriveId", sharedDriveId);
+
     // 2) Build JWT client (the library handles token exchange)
     const jwt = new google.auth.JWT({
       email: key.client_email,
