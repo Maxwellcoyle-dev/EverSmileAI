@@ -1,5 +1,4 @@
-// If your package.json sets "type":"module", use this import style.
-// Otherwise switch to require(...) in CJS.
+// googleAuth.mjs
 import { google } from "googleapis";
 import {
   SecretsManagerClient,
@@ -8,45 +7,61 @@ import {
 
 const sm = new SecretsManagerClient({});
 
-async function getDriveClientReadonly() {
-  const { SecretString } = await sm.send(
-    new GetSecretValueCommand({ SecretId: "gdrive-sa-key" })
-  );
-  if (!SecretString) throw new Error("Missing SA secret");
-  const key = JSON.parse(SecretString);
+const googleAuth = async ({
+  secretId = process.env.GDRIVE_SA_SECRET_ID ?? "gdrive-sa-key",
+  sharedDriveId = process.env.SHARED_DRIVE_ID,
+} = {}) => {
+  try {
+    // 1) Read SA key JSON from Secrets Manager
+    const { SecretString } = await sm.send(
+      new GetSecretValueCommand({ SecretId: secretId })
+    );
+    if (!SecretString) throw new Error("Secret has no SecretString");
+    const key = JSON.parse(SecretString);
 
-  // Build a JWT client using the SA private key; library handles token minting
-  const jwt = new google.auth.JWT({
-    email: key.client_email,
-    key: key.private_key,
-    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
-  });
-  await jwt.authorize();
+    // 2) Build JWT client (the library handles token exchange)
+    const jwt = new google.auth.JWT({
+      email: key.client_email,
+      key: key.private_key,
+      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+    });
+    await jwt.authorize();
 
-  return google.drive({ version: "v3", auth: jwt });
-}
+    // 3) Drive client
+    const drive = google.drive({ version: "v3", auth: jwt });
 
-export const handler = async () => {
-  const drive = await getDriveClientReadonly();
+    // 4) If we don't know the Shared Drive ID yet, list drives
+    if (!sharedDriveId) {
+      const res = await drive.drives.list({ pageSize: 10 });
+      return {
+        ok: true,
+        serviceAccount: key.client_email,
+        drives: res.data.drives ?? [],
+      };
+    }
 
-  // If you don't know the Shared Drive ID yet, list them:
-  if (!process.env.SHARED_DRIVE_ID) {
-    const list = await drive.drives.list({ pageSize: 10 });
-    return (list.data.drives || []).map((d) => ({ name: d.name, id: d.id }));
+    // 5) Otherwise, list some files within that Shared Drive
+    const filesRes = await drive.files.list({
+      corpora: "drive",
+      driveId: sharedDriveId,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      pageSize: 10,
+      fields: "files(id,name,mimeType)",
+    });
+
+    return {
+      ok: true,
+      serviceAccount: key.client_email,
+      files: filesRes.data.files ?? [],
+    };
+  } catch (e) {
+    const msg =
+      e?.response?.data?.error?.message ??
+      e?.message ??
+      (typeof e === "string" ? e : "Unknown error");
+    return { ok: false, error: msg };
   }
-
-  // Otherwise, list first few files in that Shared Drive
-  const driveId = process.env.SHARED_DRIVE_ID;
-  const files = await drive.files.list({
-    corpora: "drive",
-    driveId,
-    includeItemsFromAllDrives: true,
-    supportsAllDrives: true,
-    pageSize: 10,
-    fields: "files(id,name,mimeType)",
-  });
-
-  return { files: files.data.files };
 };
 
 export default googleAuth;
